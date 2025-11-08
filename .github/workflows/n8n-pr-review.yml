@@ -1,0 +1,55 @@
+name: N8N PR Review Comment Trigger
+
+on:
+  pull_request_review_comment:
+    types: [created]
+
+jobs:
+  trigger-n8n:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger N8N Workflow
+        run: |
+          echo "PR Review Comment Event Triggered"
+          echo "Action: ${{ github.event.action }}"
+          echo "Comment: ${{ github.event.comment.body }}"
+          echo "PR Number: ${{ github.event.pull_request.number }}"
+          echo "Comment Author: ${{ github.event.comment.user.login }}"
+          echo "Repository: ${{ github.repository }}"
+          
+          # Prepare payload for n8n webhook
+          PAYLOAD=$(cat <<EOF
+          {
+            "event": "pull_request_review_comment",
+            "action": "${{ github.event.action }}",
+            "repository": "${{ github.repository }}",
+            "pr_number": ${{ github.event.pull_request.number }},
+            "comment": {
+              "id": ${{ github.event.comment.id }},
+              "body": $(echo '${{ github.event.comment.body }}' | jq -Rs .),
+              "author": "${{ github.event.comment.user.login }}",
+              "created_at": "${{ github.event.comment.created_at }}"
+            },
+            "pull_request": {
+              "title": $(echo '${{ github.event.pull_request.title }}' | jq -Rs .),
+              "html_url": "${{ github.event.pull_request.html_url }}"
+            }
+          }
+          EOF
+          )
+          
+          echo "Prepared payload for n8n:"
+          echo "$PAYLOAD" | jq .
+          
+          # Send to n8n webhook (requires N8N_WEBHOOK_URL secret to be configured)
+          if [ -n "${{ secrets.N8N_WEBHOOK_URL }}" ]; then
+            echo "Sending to n8n webhook..."
+            curl -X POST \
+              -H "Content-Type: application/json" \
+              -d "$PAYLOAD" \
+              "${{ secrets.N8N_WEBHOOK_URL }}"
+            echo "Webhook call completed"
+          else
+            echo "N8N_WEBHOOK_URL secret not configured. Skipping webhook call."
+            echo "To enable n8n integration, add N8N_WEBHOOK_URL as a repository secret."
+          fi
