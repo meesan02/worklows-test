@@ -5,40 +5,56 @@ name: N8N PR Review Comment Trigger
   pull_request_review_comment:
     types: [created]
 
+permissions:
+  contents: read
+
 jobs:
   trigger-n8n:
     runs-on: ubuntu-latest
     steps:
       - name: Trigger N8N Workflow
+        env:
+          COMMENT_BODY: ${{ github.event.comment.body }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          COMMENT_AUTHOR: ${{ github.event.comment.user.login }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          REPOSITORY: ${{ github.repository }}
+          COMMENT_CREATED_AT: ${{ github.event.comment.created_at }}
         run: |
           echo "PR Review Comment Event Triggered"
           echo "Action: ${{ github.event.action }}"
-          echo "Comment: ${{ github.event.comment.body }}"
           echo "PR Number: ${{ github.event.pull_request.number }}"
-          echo "Comment Author: ${{ github.event.comment.user.login }}"
-          echo "Repository: ${{ github.repository }}"
+          echo "Comment Author: ${COMMENT_AUTHOR}"
+          echo "Repository: ${REPOSITORY}"
 
           # Prepare payload for n8n webhook
-          PAYLOAD=$(cat <<EOF
-          {
-            "event": "pull_request_review_comment",
-            "action": "${{ github.event.action }}",
-            "repository": "${{ github.repository }}",
-            "pr_number": ${{ github.event.pull_request.number }},
-            "comment": {
-              "id": ${{ github.event.comment.id }},
-              "body": $(echo '${{ github.event.comment.body }}' | jq -Rs .),
-              "author": "${{ github.event.comment.user.login }}",
-              "created_at": "${{ github.event.comment.created_at }}"
-            },
-            "pull_request": {
-              "title": \
-          $(echo '${{ github.event.pull_request.title }}' | jq -Rs .),
-              "html_url": "${{ github.event.pull_request.html_url }}"
-            }
-          }
-          EOF
-          )
+          PAYLOAD=$(jq -n \
+            --arg event "pull_request_review_comment" \
+            --arg action "${{ github.event.action }}" \
+            --arg repository "${REPOSITORY}" \
+            --argjson pr_number "${{ github.event.pull_request.number }}" \
+            --argjson comment_id "${{ github.event.comment.id }}" \
+            --arg comment_body "${COMMENT_BODY}" \
+            --arg comment_author "${COMMENT_AUTHOR}" \
+            --arg comment_created_at "${COMMENT_CREATED_AT}" \
+            --arg pr_title "${PR_TITLE}" \
+            --arg pr_url "${PR_URL}" \
+            '{
+              event: $event,
+              action: $action,
+              repository: $repository,
+              pr_number: $pr_number,
+              comment: {
+                id: $comment_id,
+                body: $comment_body,
+                author: $comment_author,
+                created_at: $comment_created_at
+              },
+              pull_request: {
+                title: $pr_title,
+                html_url: $pr_url
+              }
+            }')
 
           echo "Prepared payload for n8n:"
           echo "$PAYLOAD" | jq .
