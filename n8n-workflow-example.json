@@ -1,0 +1,100 @@
+{
+  "name": "GitHub PR Review Comment Handler",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "github-pr-review",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "webhookId": "your-webhook-id"
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "event",
+              "value": "={{ $json.event }}"
+            },
+            {
+              "name": "action",
+              "value": "={{ $json.action }}"
+            },
+            {
+              "name": "repository",
+              "value": "={{ $json.repository }}"
+            },
+            {
+              "name": "pr_number",
+              "value": "={{ $json.pr_number }}"
+            },
+            {
+              "name": "comment_author",
+              "value": "={{ $json.comment.author }}"
+            },
+            {
+              "name": "comment_body",
+              "value": "={{ $json.comment.body }}"
+            },
+            {
+              "name": "pr_title",
+              "value": "={{ $json.pull_request.title }}"
+            },
+            {
+              "name": "pr_url",
+              "value": "={{ $json.pull_request.html_url }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Extract Data",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "text": "=New PR Review Comment received!\n\nRepository: {{ $json.repository }}\nPR #{{ $json.pr_number }}: {{ $json.pr_title }}\n\nComment by {{ $json.comment_author }}:\n{{ $json.comment_body }}\n\nPR URL: {{ $json.pr_url }}",
+        "options": {}
+      },
+      "name": "Format Message",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 1,
+      "position": [650, 300]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Extract Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Data": {
+      "main": [
+        [
+          {
+            "node": "Format Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {},
+  "id": "1"
+}
