@@ -13,13 +13,36 @@ This repository is for testing integrations with n8n. When a review comment is a
 1. An n8n instance with a webhook node configured
 2. The webhook URL from your n8n workflow
 
-### Configuration
+### Quick Start with Example Workflow
 
-1. In your GitHub repository, go to Settings > Secrets and variables > Actions
-2. Add a new repository secret named `N8N_WEBHOOK_URL`
-3. Set the value to your n8n webhook URL (e.g., `https://your-n8n-instance.com/webhook/your-webhook-id`)
+1. Import the example workflow into your n8n instance:
+   - Copy the contents of `n8n-workflow-example.json`
+   - In your n8n instance, go to Workflows > Import from File
+   - Paste the JSON content
+   - Activate the workflow
+   - Copy the webhook URL from the Webhook node
 
-### How It Works
+2. Configure the GitHub repository:
+   - Go to Settings > Secrets and variables > Actions
+   - Add a new repository secret named `N8N_WEBHOOK_URL`
+   - Paste your n8n webhook URL as the value
+
+3. Test the integration:
+   - Create a Pull Request in this repository
+   - Add a review comment to the PR
+   - Check the Actions tab to see the workflow run
+   - Verify that your n8n workflow received the webhook call
+
+### Manual Configuration
+
+If you prefer to create your own n8n workflow:
+
+1. In n8n, create a new workflow with a Webhook node
+2. Configure the webhook to accept POST requests
+3. Copy the webhook URL
+4. Add the webhook URL as `N8N_WEBHOOK_URL` secret in GitHub
+
+## How It Works
 
 When a review comment is created on a PR:
 1. The GitHub Actions workflow `.github/workflows/n8n-pr-review.yml` is triggered
@@ -36,14 +59,11 @@ The webhook receives the following data:
 - PR number, title, and URL
 - Comment ID, body, author, and creation time
 
-### Testing
-
-To test the integration:
-1. Create a Pull Request in this repository
-2. Add a review comment to the PR
-3. Check the Actions tab to see the workflow run
-4. Verify that your n8n workflow received the webhook call
-
 ## Workflow Details
 
 The workflow triggers on the `pull_request_review_comment` event with the `created` action type, ensuring it only runs when new review comments are added to PRs.
+
+## Files
+
+- `.github/workflows/n8n-pr-review.yml` - GitHub Actions workflow
+- `n8n-workflow-example.json` - Example n8n workflow to import
